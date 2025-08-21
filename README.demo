@@ -1,0 +1,56 @@
+# Deploy nginx-ingress on EKS using a custom domain name
+
+## clone repo
+git clone https://github.com/network-charles/mirrord-webhook-lab.git
+cd mirrord-webhook-lab
+
+## apply resources
+terraform init -backend-config=backend.conf
+terraform apply --auto-approve
+
+## connect to cluster
+aws eks update-kubeconfig --name staging
+
+## view pod
+kubectl get pods
+
+## login into ecr
+export AWS_DEFAULT_REGION=
+export AWS_ACCOUNT_ID=
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+
+## build image
+export IMAGE_REPO_NAME=ecr
+export IMAGE_TAG=latest
+docker build -t $IMAGE_REPO_NAME -f K8s/shared-environment/app/Dockerfile .
+
+## push image
+docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+
+## apply manifest
+kubectl apply -f K8s/shared-environment/infrastructure/flask-pod.yaml
+kubectl apply -f K8s/shared-environment/infrastructure/flask-service.yaml
+kubectl apply -f K8s/shared-environment/infrastructure/ingress.yaml
+
+## view pod
+kubectl get pods
+
+## use mirrord to add a new feature
+uv init --bare
+uv venv
+source .venv/bin/activate
+uv add flask requests
+
+## run mirrord in steal mode
+export MIRRORD_LAYER_ARCH=x86
+export MIRRORD_FORCE_LAYER_ARCH=true
+mirrord exec --steal --target pod/flask-pod -- python3 K8s/local-environment/main.py
+
+## run mirrord in mirror mode
+export MIRRORD_LAYER_ARCH=x86
+export MIRRORD_FORCE_LAYER_ARCH=true
+mirrord exec --target pod/flask-pod -- python3 K8s/local-environment/main.py
+
+## delete resources
+terraform destroy --auto-approve
