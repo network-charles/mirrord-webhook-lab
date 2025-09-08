@@ -74,7 +74,7 @@ resource "aws_route53_record" "domain_validation" {
 
 resource "aws_route53_record" "webhook_alias" {
   zone_id = data.aws_route53_zone.public.zone_id
-  name    = "webhook.charlesuneze.click"
+  name    = "webhook.${var.domain_name}"
   type    = "A"
 
   alias {

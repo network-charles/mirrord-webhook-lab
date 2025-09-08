@@ -3,7 +3,7 @@ data "aws_eks_cluster_auth" "staging" {
 }
 
 data "aws_route53_zone" "public" {
-  name = "charlesuneze.click." # Ensure the domain name ends with a dot
+  name = "${var.domain_name}."
 }
 
 ################################

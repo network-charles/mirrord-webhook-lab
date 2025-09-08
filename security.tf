@@ -69,8 +69,8 @@ resource "aws_iam_role_policy_attachment" "AmazonEC2ContainerRegistryReadOnly" {
 
 # Amazon certificate manager
 resource "aws_acm_certificate" "domain" {
-  domain_name               = "charlesuneze.click"
-  subject_alternative_names = ["webhook.charlesuneze.click"]
+  domain_name               = var.domain_name
+  subject_alternative_names = ["webhook.${var.domain_name}"]
   validation_method         = "DNS"
 }
 
